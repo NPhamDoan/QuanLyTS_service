@@ -1,0 +1,11 @@
+import { Router } from "express";
+import { taoHoSoHandler, layDanhSachHoSoHandler, layHoSoTheoIdHandler, capNhatTrangThaiHandler, layThongKeHandler, layLichSuCapNhatHandler } from "../controllers/hosotuyensinh.controller.js";
+import { avatarUpload } from "../middleware/upload.middleware.js";
+const router = Router();
+router.post("/", avatarUpload.single("avatar"), taoHoSoHandler);
+router.get("/thong-ke", layThongKeHandler);
+router.get("/", layDanhSachHoSoHandler);
+router.get("/:id", layHoSoTheoIdHandler);
+router.get("/:id/lich-su", layLichSuCapNhatHandler);
+router.patch("/:id/trang-thai", capNhatTrangThaiHandler);
+export default router;

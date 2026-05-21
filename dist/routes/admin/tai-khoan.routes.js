@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { layDanhSachHandler, taoTaiKhoanHandler, capNhatTaiKhoanHandler, capNhatTrangThaiHandler, datLaiMatKhauHandler, } from "../../controllers/tai-khoan.controller.js";
+import { authMiddleware, adminMiddleware, } from "../../middleware/auth.middleware.js";
+const router = Router();
+router.use(authMiddleware);
+router.use(adminMiddleware);
+router.get("/", layDanhSachHandler);
+router.post("/", taoTaiKhoanHandler);
+router.put("/:id", capNhatTaiKhoanHandler);
+router.patch("/:id/trang-thai", capNhatTrangThaiHandler);
+router.patch("/:id/mat-khau", datLaiMatKhauHandler);
+export default router;
