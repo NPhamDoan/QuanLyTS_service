@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: quanly-tuyensinh
+    runtime: node
+    buildCommand: npm install
+    startCommand: node dist/server.js
+    envVars:
+      - key: DB_TYPE
+        value: supabase
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
