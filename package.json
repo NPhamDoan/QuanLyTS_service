@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:reset": "node -e \"import('fs').then(f=>{try{f.unlinkSync('./db/dev.db')}catch{}}); console.log('Deleted dev.db. Start server to re-seed.')\""
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.3",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1"
+  }
+}
