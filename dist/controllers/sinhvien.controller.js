@@ -1,11 +1,8 @@
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
 import { taoSinhVien, laySinhVien, capNhatAvatar } from "../services/sinhvien.service.js";
 import { toHttpStatus } from "../domain/errors.js";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, "..", "..", "uploads", "public");
+import { publicDir } from "../utils/storage.js";
 function sendError(res, err, fallback) {
     const { status, message } = toHttpStatus(err);
     res.status(status).json({ error: message || fallback });
@@ -50,7 +47,7 @@ export const uploadAvatarHandler = async (req, res) => {
         }
         // Xóa avatar cũ nếu có
         if (sv.anhDaiDien) {
-            const oldPath = path.join(uploadsDir, sv.anhDaiDien);
+            const oldPath = path.join(publicDir, sv.anhDaiDien);
             if (fs.existsSync(oldPath)) {
                 fs.unlinkSync(oldPath);
             }

@@ -1,12 +1,7 @@
-import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
 import { taoHoSo, layDanhSachHoSo, layHoSoTheoId, capNhatTrangThai, layThongKe, layLichSu, } from "../services/hosotuyensinh.service.js";
 import { capNhatAvatar } from "../services/sinhvien.service.js";
 import { toHttpStatus } from "../domain/errors.js";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, "..", "..", "uploads");
 function sendError(res, err, fallback) {
     const { status, message } = toHttpStatus(err);
     res.status(status).json({ error: message || fallback });

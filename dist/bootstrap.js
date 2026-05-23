@@ -5,7 +5,8 @@ import { logger } from "./logger.js";
  * Bootstrap chạy sau khi repos được khởi tạo.
  * Seed tài khoản admin mặc định nếu DB chưa có user nào.
  *
- * - Với SQLite: db.ts đã seed rồi (giữ tương thích ngược), hàm này no-op.
+ * - Với SQLite: seed do `repositories/sqlite/client.ts` đảm nhiệm khi
+ *   `getDb()` chạy lần đầu — hàm này phát hiện count > 0 và no-op.
  * - Với Supabase: đây là nơi duy nhất seed admin.
  */
 export async function ensureAdminAccount() {

@@ -1,23 +1,12 @@
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { themTepDinhKem, layDanhSachTepTheoHoSo, xoaTepDinhKem, layTepTheoId, } from "../services/tepdinhkem.service.js";
+import { layDanhSachTepTheoHoSo, themTepDinhKem, xoaTepDinhKem, layTepTheoId, } from "../services/tepdinhkem.service.js";
 import { toHttpStatus } from "../domain/errors.js";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const privateDir = path.join(__dirname, "..", "..", "uploads", "private");
+import { privateDir } from "../utils/storage.js";
 function sendError(res, err, fallback) {
     const { status, message } = toHttpStatus(err);
     res.status(status).json({ error: message || fallback });
 }
-export const themTepHandler = async (req, res) => {
-    try {
-        res.status(201).json(await themTepDinhKem(req.body));
-    }
-    catch (err) {
-        sendError(res, err, "Không thể thêm tệp đính kèm");
-    }
-};
 export const uploadTepHandler = async (req, res) => {
     try {
         const file = req.file;
