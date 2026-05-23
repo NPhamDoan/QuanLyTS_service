@@ -1,5 +1,6 @@
 import { getSupabase } from "./client.js";
 import { throwIfError } from "./error-map.js";
+import { logQuery, logQueryError } from "../../logger.js";
 async function generateMaHoSo() {
     const year = new Date().getFullYear();
     const prefix = `HS-${year}`;
@@ -55,105 +56,151 @@ function flatten(row) {
 }
 export class SupabaseHoSoTuyenSinhRepository {
     async findAll(filters) {
-        let query = getSupabase().from("HoSoTuyenSinh").select(VIEW_SELECT);
-        if (filters.trangThai)
-            query = query.eq("trangThai", filters.trangThai);
-        if (filters.namTuyenSinhId)
-            query = query.eq("namTuyenSinhId", Number(filters.namTuyenSinhId));
-        if (filters.dotTuyenSinhId)
-            query = query.eq("dotTuyenSinhId", Number(filters.dotTuyenSinhId));
-        if (filters.nganhDangKyId)
-            query = query.eq("nganhDangKyId", Number(filters.nganhDangKyId));
-        const { data, error } = await query.order("ngayTao", { ascending: false });
-        if (error)
-            throwIfError(error);
-        return (data || []).map(flatten);
+        logQuery("SupabaseHoSoTuyenSinhRepository", "findAll", { filters });
+        try {
+            let query = getSupabase().from("HoSoTuyenSinh").select(VIEW_SELECT);
+            if (filters.trangThai)
+                query = query.eq("trangThai", filters.trangThai);
+            if (filters.namTuyenSinhId)
+                query = query.eq("namTuyenSinhId", Number(filters.namTuyenSinhId));
+            if (filters.dotTuyenSinhId)
+                query = query.eq("dotTuyenSinhId", Number(filters.dotTuyenSinhId));
+            if (filters.nganhDangKyId)
+                query = query.eq("nganhDangKyId", Number(filters.nganhDangKyId));
+            const { data, error } = await query.order("ngayTao", { ascending: false });
+            if (error)
+                throwIfError(error);
+            return (data || []).map(flatten);
+        }
+        catch (err) {
+            logQueryError("SupabaseHoSoTuyenSinhRepository", "findAll", err);
+            throw err;
+        }
     }
     async findById(maHoSo) {
-        const { data, error } = await getSupabase()
-            .from("HoSoTuyenSinh")
-            .select(VIEW_SELECT)
-            .eq("maHoSo", maHoSo)
-            .maybeSingle();
-        if (error)
-            throwIfError(error);
-        return data ? flatten(data) : null;
+        logQuery("SupabaseHoSoTuyenSinhRepository", "findById", { maHoSo });
+        try {
+            const { data, error } = await getSupabase()
+                .from("HoSoTuyenSinh")
+                .select(VIEW_SELECT)
+                .eq("maHoSo", maHoSo)
+                .maybeSingle();
+            if (error)
+                throwIfError(error);
+            return data ? flatten(data) : null;
+        }
+        catch (err) {
+            logQueryError("SupabaseHoSoTuyenSinhRepository", "findById", err);
+            throw err;
+        }
     }
     async findRawById(maHoSo) {
-        const { data, error } = await getSupabase()
-            .from("HoSoTuyenSinh")
-            .select("*")
-            .eq("maHoSo", maHoSo)
-            .maybeSingle();
-        if (error)
-            throwIfError(error);
-        return data ?? null;
+        logQuery("SupabaseHoSoTuyenSinhRepository", "findRawById", { maHoSo });
+        try {
+            const { data, error } = await getSupabase()
+                .from("HoSoTuyenSinh")
+                .select("*")
+                .eq("maHoSo", maHoSo)
+                .maybeSingle();
+            if (error)
+                throwIfError(error);
+            return data ?? null;
+        }
+        catch (err) {
+            logQueryError("SupabaseHoSoTuyenSinhRepository", "findRawById", err);
+            throw err;
+        }
     }
     async create(data) {
-        const maHoSo = await generateMaHoSo();
-        const now = new Date().toISOString();
-        const { error } = await getSupabase().from("HoSoTuyenSinh").insert({
-            maHoSo,
-            maSinhVien: data.maSinhVien,
-            namTuyenSinhId: data.namTuyenSinhId,
-            dotTuyenSinhId: data.dotTuyenSinhId,
-            nganhDangKyId: data.nganhDangKyId,
-            heDaoTaoId: data.heDaoTaoId,
-            trangThai: "moi_nop",
-            ghiChu: data.ghiChu ?? null,
-            ngayTao: now,
-            ngayCapNhat: now,
-        });
-        if (error)
-            throwIfError(error);
-        return (await this.findById(maHoSo));
+        logQuery("SupabaseHoSoTuyenSinhRepository", "create", { data });
+        try {
+            const maHoSo = await generateMaHoSo();
+            const now = new Date().toISOString();
+            const { error } = await getSupabase().from("HoSoTuyenSinh").insert({
+                maHoSo,
+                maSinhVien: data.maSinhVien,
+                namTuyenSinhId: data.namTuyenSinhId,
+                dotTuyenSinhId: data.dotTuyenSinhId,
+                nganhDangKyId: data.nganhDangKyId,
+                heDaoTaoId: data.heDaoTaoId,
+                trangThai: "moi_nop",
+                ghiChu: data.ghiChu ?? null,
+                ngayTao: now,
+                ngayCapNhat: now,
+            });
+            if (error)
+                throwIfError(error);
+            return (await this.findById(maHoSo));
+        }
+        catch (err) {
+            logQueryError("SupabaseHoSoTuyenSinhRepository", "create", err);
+            throw err;
+        }
     }
     async updateTrangThai(maHoSo, trangThai, ghiChu) {
-        const { error } = await getSupabase()
-            .from("HoSoTuyenSinh")
-            .update({
+        logQuery("SupabaseHoSoTuyenSinhRepository", "updateTrangThai", {
+            maHoSo,
             trangThai,
             ghiChu,
-            ngayCapNhat: new Date().toISOString(),
-        })
-            .eq("maHoSo", maHoSo);
-        if (error)
-            throwIfError(error);
-        return (await this.findById(maHoSo));
+        });
+        try {
+            const { error } = await getSupabase()
+                .from("HoSoTuyenSinh")
+                .update({
+                trangThai,
+                ghiChu,
+                ngayCapNhat: new Date().toISOString(),
+            })
+                .eq("maHoSo", maHoSo);
+            if (error)
+                throwIfError(error);
+            return (await this.findById(maHoSo));
+        }
+        catch (err) {
+            logQueryError("SupabaseHoSoTuyenSinhRepository", "updateTrangThai", err);
+            throw err;
+        }
     }
     async thongKe() {
-        // Supabase không có GROUP BY trực tiếp qua REST API.
-        // Cách đơn giản: đếm từng trạng thái bằng head=true + count=exact.
-        const supabase = getSupabase();
-        const statuses = [
-            { key: "moiNop", value: "moi_nop" },
-            { key: "dangKiemTra", value: "dang_kiem_tra" },
-            { key: "thieuGiayTo", value: "thieu_giay_to" },
-            { key: "hoanTat", value: "hoan_tat" },
-            { key: "tuChoi", value: "tu_choi" },
-        ];
-        const [totalRes, ...results] = await Promise.all([
-            supabase.from("HoSoTuyenSinh").select("*", { count: "exact", head: true }),
-            ...statuses.map((s) => supabase
-                .from("HoSoTuyenSinh")
-                .select("*", { count: "exact", head: true })
-                .eq("trangThai", s.value)),
-        ]);
-        if (totalRes.error)
-            throwIfError(totalRes.error);
-        const stats = {
-            total: totalRes.count ?? 0,
-            moiNop: 0,
-            dangKiemTra: 0,
-            thieuGiayTo: 0,
-            hoanTat: 0,
-            tuChoi: 0,
-        };
-        results.forEach((res, i) => {
-            if (res.error)
-                throwIfError(res.error);
-            stats[statuses[i].key] = res.count ?? 0;
-        });
-        return stats;
+        logQuery("SupabaseHoSoTuyenSinhRepository", "thongKe", {});
+        try {
+            // Supabase không có GROUP BY trực tiếp qua REST API.
+            // Cách đơn giản: đếm từng trạng thái bằng head=true + count=exact.
+            const supabase = getSupabase();
+            const statuses = [
+                { key: "moiNop", value: "moi_nop" },
+                { key: "dangKiemTra", value: "dang_kiem_tra" },
+                { key: "thieuGiayTo", value: "thieu_giay_to" },
+                { key: "hoanTat", value: "hoan_tat" },
+                { key: "tuChoi", value: "tu_choi" },
+            ];
+            const [totalRes, ...results] = await Promise.all([
+                supabase.from("HoSoTuyenSinh").select("*", { count: "exact", head: true }),
+                ...statuses.map((s) => supabase
+                    .from("HoSoTuyenSinh")
+                    .select("*", { count: "exact", head: true })
+                    .eq("trangThai", s.value)),
+            ]);
+            if (totalRes.error)
+                throwIfError(totalRes.error);
+            const stats = {
+                total: totalRes.count ?? 0,
+                moiNop: 0,
+                dangKiemTra: 0,
+                thieuGiayTo: 0,
+                hoanTat: 0,
+                tuChoi: 0,
+            };
+            results.forEach((res, i) => {
+                if (res.error)
+                    throwIfError(res.error);
+                stats[statuses[i].key] = res.count ?? 0;
+            });
+            return stats;
+        }
+        catch (err) {
+            logQueryError("SupabaseHoSoTuyenSinhRepository", "thongKe", err);
+            throw err;
+        }
     }
 }

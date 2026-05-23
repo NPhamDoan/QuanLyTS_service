@@ -7,7 +7,7 @@ function sendError(res, err, fallback) {
 export const loginHandler = async (req, res) => {
     try {
         const { tenDangNhap, matKhau } = req.body;
-        res.json(await dangNhap(tenDangNhap, matKhau));
+        res.json(await dangNhap(tenDangNhap, matKhau, { requestId: req.id }));
     }
     catch (err) {
         sendError(res, err, "Lỗi đăng nhập");
@@ -16,7 +16,7 @@ export const loginHandler = async (req, res) => {
 export const refreshHandler = async (req, res) => {
     try {
         const { refreshToken } = req.body;
-        res.json(await lamMoiToken(refreshToken));
+        res.json(await lamMoiToken(refreshToken, { requestId: req.id }));
     }
     catch (err) {
         sendError(res, err, "Lỗi làm mới token");
@@ -25,7 +25,10 @@ export const refreshHandler = async (req, res) => {
 export const logoutHandler = async (req, res) => {
     try {
         const { refreshToken } = req.body;
-        await dangXuat(refreshToken);
+        await dangXuat(refreshToken, {
+            requestId: req.id,
+            taiKhoanId: req.user?.id,
+        });
         res.json({ message: "Đăng xuất thành công" });
     }
     catch (err) {

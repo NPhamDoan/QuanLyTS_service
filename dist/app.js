@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import { httpLogger, logger } from "./logger.js";
 import { authMiddleware } from "./middleware/auth.middleware.js";
 import authRoutes from "./routes/auth.routes.js";
 import taiKhoanRoutes from "./routes/admin/tai-khoan.routes.js";
@@ -13,6 +14,9 @@ import tepDinhKemRoutes from "./routes/tepdinhkem.routes.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+// HTTP request logging — mount đầu tiên để bắt mọi request (kể cả khi cors/json
+// gặp lỗi). pino-http sẽ gắn `req.id` và `req.log` (child logger có requestId).
+app.use(httpLogger);
 app.use(cors());
 app.use(express.json());
 // Serve only public uploads statically (avatars, etc.)
@@ -34,5 +38,20 @@ app.use(express.static(frontendPath));
 // SPA fallback — mọi route không match API sẽ trả về index.html
 app.get("*", (_req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
+});
+// Error middleware — phải đặt cuối chuỗi và có chữ ký 4 tham số để Express
+// nhận diện là error handler. Ưu tiên `req.log` (child logger có requestId);
+// nếu không có thì fallback về `logger` toàn cục.
+app.use((err, req, res, _next) => {
+    const log = req.log ?? logger;
+    log.error({
+        err: {
+            name: err?.name,
+            message: err?.message,
+            stack: err?.stack,
+        },
+    }, "request.error");
+    const status = typeof err?.status === "number" ? err.status : 500;
+    res.status(status).json({ error: err?.message || "Lỗi máy chủ" });
 });
 export default app;

@@ -1,4 +1,5 @@
 import { getDb } from "./client.js";
+import { logQuery, logQueryError } from "../../logger.js";
 function generateMaSinhVien() {
     const year = new Date().getFullYear();
     const prefix = `SV-${year}`;
@@ -15,24 +16,45 @@ function generateMaSinhVien() {
 }
 export class SqliteSinhVienRepository {
     async findById(maSinhVien) {
-        const row = getDb()
-            .prepare("SELECT * FROM SinhVien WHERE maSinhVien = ?")
-            .get(maSinhVien);
-        return row ?? null;
+        logQuery("SqliteSinhVienRepository", "findById", { maSinhVien });
+        try {
+            const row = getDb()
+                .prepare("SELECT * FROM SinhVien WHERE maSinhVien = ?")
+                .get(maSinhVien);
+            return row ?? null;
+        }
+        catch (err) {
+            logQueryError("SqliteSinhVienRepository", "findById", err);
+            throw err;
+        }
     }
     async create(data) {
-        const maSinhVien = generateMaSinhVien();
-        const now = new Date().toISOString();
-        getDb()
-            .prepare(`INSERT INTO SinhVien (
-           maSinhVien, hoTen, ngaySinh, gioiTinh, cccd, email, soDienThoai, diaChi, ngayTao, ngayCapNhat
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-            .run(maSinhVien, data.hoTen, data.ngaySinh, data.gioiTinh, data.cccd, data.email, data.soDienThoai, data.diaChi, now, now);
-        return { maSinhVien, ...data, anhDaiDien: null, ngayTao: now, ngayCapNhat: now };
+        logQuery("SqliteSinhVienRepository", "create", { data });
+        try {
+            const maSinhVien = generateMaSinhVien();
+            const now = new Date().toISOString();
+            getDb()
+                .prepare(`INSERT INTO SinhVien (
+             maSinhVien, hoTen, ngaySinh, gioiTinh, cccd, email, soDienThoai, diaChi, ngayTao, ngayCapNhat
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .run(maSinhVien, data.hoTen, data.ngaySinh, data.gioiTinh, data.cccd, data.email, data.soDienThoai, data.diaChi, now, now);
+            return { maSinhVien, ...data, anhDaiDien: null, ngayTao: now, ngayCapNhat: now };
+        }
+        catch (err) {
+            logQueryError("SqliteSinhVienRepository", "create", err);
+            throw err;
+        }
     }
     async updateAvatar(maSinhVien, anhDaiDien) {
-        getDb()
-            .prepare("UPDATE SinhVien SET anhDaiDien = ? WHERE maSinhVien = ?")
-            .run(anhDaiDien, maSinhVien);
+        logQuery("SqliteSinhVienRepository", "updateAvatar", { maSinhVien, anhDaiDien });
+        try {
+            getDb()
+                .prepare("UPDATE SinhVien SET anhDaiDien = ? WHERE maSinhVien = ?")
+                .run(anhDaiDien, maSinhVien);
+        }
+        catch (err) {
+            logQueryError("SqliteSinhVienRepository", "updateAvatar", err);
+            throw err;
+        }
     }
 }

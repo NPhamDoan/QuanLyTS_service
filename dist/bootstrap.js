@@ -1,5 +1,6 @@
 import bcryptjs from "bcryptjs";
 import { repos } from "./repositories/index.js";
+import { logger } from "./logger.js";
 /**
  * Bootstrap chạy sau khi repos được khởi tạo.
  * Seed tài khoản admin mặc định nếu DB chưa có user nào.
@@ -18,5 +19,5 @@ export async function ensureAdminAccount() {
         hoTen: "Quản trị viên",
         vaiTro: "admin",
     });
-    console.log("[bootstrap] Đã tạo tài khoản admin mặc định.");
+    logger.info("[bootstrap] Đã tạo tài khoản admin mặc định.");
 }
