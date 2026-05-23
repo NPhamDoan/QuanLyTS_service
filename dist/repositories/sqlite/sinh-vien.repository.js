@@ -1,6 +1,10 @@
 import { getDb } from "./client.js";
 import { logQuery, logQueryError } from "../../logger.js";
-function generateMaSinhVien() {
+/**
+ * Sinh mã sinh viên trong cùng transaction với INSERT để tránh race —
+ * xem comment ở `ho-so.repository.ts` về lý do.
+ */
+function generateMaSinhVienInTx() {
     const year = new Date().getFullYear();
     const prefix = `SV-${year}`;
     const row = getDb()
@@ -31,14 +35,23 @@ export class SqliteSinhVienRepository {
     async create(data) {
         logQuery("SqliteSinhVienRepository", "create", { data });
         try {
-            const maSinhVien = generateMaSinhVien();
             const now = new Date().toISOString();
-            getDb()
-                .prepare(`INSERT INTO SinhVien (
+            const db = getDb();
+            const runTx = db.transaction((input) => {
+                const maSinhVien = generateMaSinhVienInTx();
+                db.prepare(`INSERT INTO SinhVien (
              maSinhVien, hoTen, ngaySinh, gioiTinh, cccd, email, soDienThoai, diaChi, ngayTao, ngayCapNhat
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .run(maSinhVien, data.hoTen, data.ngaySinh, data.gioiTinh, data.cccd, data.email, data.soDienThoai, data.diaChi, now, now);
-            return { maSinhVien, ...data, anhDaiDien: null, ngayTao: now, ngayCapNhat: now };
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(maSinhVien, input.hoTen, input.ngaySinh, input.gioiTinh, input.cccd, input.email, input.soDienThoai, input.diaChi, now, now);
+                return maSinhVien;
+            });
+            const maSinhVien = runTx(data);
+            return {
+                maSinhVien,
+                ...data,
+                anhDaiDien: null,
+                ngayTao: now,
+                ngayCapNhat: now,
+            };
         }
         catch (err) {
             logQueryError("SqliteSinhVienRepository", "create", err);

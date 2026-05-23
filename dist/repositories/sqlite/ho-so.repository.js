@@ -1,6 +1,19 @@
 import { getDb } from "./client.js";
 import { logQuery, logQueryError } from "../../logger.js";
-function generateMaHoSo() {
+/**
+ * Sinh mã hồ sơ chạy trong cùng transaction với INSERT để tránh race
+ * condition: 2 request đồng thời cùng đọc MAX rồi cả hai đều +1.
+ *
+ * SQLite (better-sqlite3) serialize writes ở mức database — `BEGIN
+ * IMMEDIATE` (mặc định khi dùng `db.transaction()`) lấy lock để 2 write
+ * không chạy song song. Việc bọc generate + insert vào cùng tx đảm bảo
+ * mã được tính từ snapshot DB tại thời điểm tx bắt đầu, không bị "stale
+ * read".
+ *
+ * Hàm này KHÔNG được gọi ngoài transaction — chỉ dùng nội bộ trong
+ * `create`.
+ */
+function generateMaHoSoInTx() {
     const year = new Date().getFullYear();
     const prefix = `HS-${year}`;
     const row = getDb()
@@ -89,14 +102,20 @@ export class SqliteHoSoTuyenSinhRepository {
     async create(data) {
         logQuery("SqliteHoSoTuyenSinhRepository", "create", { data });
         try {
-            const maHoSo = generateMaHoSo();
             const now = new Date().toISOString();
-            getDb()
-                .prepare(`INSERT INTO HoSoTuyenSinh (
+            const db = getDb();
+            // Bọc generate + insert trong 1 transaction để tránh race:
+            // SELECT MAX và INSERT phải nằm trong cùng 1 tx (BEGIN IMMEDIATE)
+            // để đảm bảo không có 2 request cùng đọc snapshot rồi cả hai INSERT.
+            const runTx = db.transaction((input) => {
+                const maHoSo = generateMaHoSoInTx();
+                db.prepare(`INSERT INTO HoSoTuyenSinh (
              maHoSo, maSinhVien, namTuyenSinhId, dotTuyenSinhId, nganhDangKyId, heDaoTaoId,
              trangThai, ghiChu, ngayTao, ngayCapNhat
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .run(maHoSo, data.maSinhVien, data.namTuyenSinhId, data.dotTuyenSinhId, data.nganhDangKyId, data.heDaoTaoId, "moi_nop", data.ghiChu ?? null, now, now);
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(maHoSo, input.maSinhVien, input.namTuyenSinhId, input.dotTuyenSinhId, input.nganhDangKyId, input.heDaoTaoId, "moi_nop", input.ghiChu ?? null, now, now);
+                return maHoSo;
+            });
+            const maHoSo = runTx(data);
             return (await this.findById(maHoSo));
         }
         catch (err) {

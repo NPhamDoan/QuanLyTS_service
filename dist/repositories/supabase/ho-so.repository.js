@@ -1,26 +1,6 @@
 import { getSupabase } from "./client.js";
 import { throwIfError } from "./error-map.js";
 import { logQuery, logQueryError } from "../../logger.js";
-async function generateMaHoSo() {
-    const year = new Date().getFullYear();
-    const prefix = `HS-${year}`;
-    const { data, error } = await getSupabase()
-        .from("HoSoTuyenSinh")
-        .select("maHoSo")
-        .like("maHoSo", `${prefix}%`)
-        .order("maHoSo", { ascending: false })
-        .limit(1);
-    if (error)
-        throwIfError(error);
-    let seq = 1;
-    if (data && data.length > 0) {
-        const last = data[0].maHoSo;
-        const lastSeq = parseInt(last.slice(prefix.length), 10);
-        if (!isNaN(lastSeq))
-            seq = lastSeq + 1;
-    }
-    return `${prefix}${String(seq).padStart(4, "0")}`;
-}
 /**
  * Supabase JOIN select — lồng objects theo FK.
  * Key alias phải khớp với FK constraint name do Supabase auto-detect.
@@ -114,22 +94,25 @@ export class SupabaseHoSoTuyenSinhRepository {
     async create(data) {
         logQuery("SupabaseHoSoTuyenSinhRepository", "create", { data });
         try {
-            const maHoSo = await generateMaHoSo();
-            const now = new Date().toISOString();
-            const { error } = await getSupabase().from("HoSoTuyenSinh").insert({
-                maHoSo,
-                maSinhVien: data.maSinhVien,
-                namTuyenSinhId: data.namTuyenSinhId,
-                dotTuyenSinhId: data.dotTuyenSinhId,
-                nganhDangKyId: data.nganhDangKyId,
-                heDaoTaoId: data.heDaoTaoId,
-                trangThai: "moi_nop",
-                ghiChu: data.ghiChu ?? null,
-                ngayTao: now,
-                ngayCapNhat: now,
+            // Atomic: gọi RPC `tao_ho_so` (xem `db/supabase-schema.sql`).
+            // Function chạy advisory lock + sinh ma + INSERT trong cùng tx →
+            // 2 request đồng thời không thể đụng nhau.
+            const { data: row, error } = await getSupabase().rpc("tao_ho_so", {
+                p_ma_sinh_vien: data.maSinhVien,
+                p_nam_tuyen_sinh_id: data.namTuyenSinhId,
+                p_dot_tuyen_sinh_id: data.dotTuyenSinhId,
+                p_nganh_dang_ky_id: data.nganhDangKyId,
+                p_he_dao_tao_id: data.heDaoTaoId,
+                p_ghi_chu: data.ghiChu ?? null,
             });
             if (error)
                 throwIfError(error);
+            // RPC returns a single row { maHoSo: '...' }
+            const maHoSo = row?.maHoSo ??
+                (Array.isArray(row) ? row[0]?.maHoSo : null);
+            if (!maHoSo) {
+                throw new Error("RPC tao_ho_so không trả về maHoSo");
+            }
             return (await this.findById(maHoSo));
         }
         catch (err) {
