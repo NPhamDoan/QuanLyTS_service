@@ -1,12 +1,9 @@
 {
-  "name": "backend",
+  "name": "quanly-ts-service",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "db:reset": "node -e \"import('fs').then(f=>{try{f.unlinkSync('./db/dev.db')}catch{}}); console.log('Deleted dev.db. Start server to re-seed.')\""
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.3",
